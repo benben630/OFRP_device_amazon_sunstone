@@ -1,0 +1,37 @@
+import /tee-supplicant.rc
+
+on init
+    install_keyring
+
+on fs
+    symlink /dev/block/platform/bootdevice /dev/block/bootdevice
+    wait /dev/block/by-name/userdata 15
+    wait /dev/block/by-name/super 15
+    exec_start fix-symlinks
+
+on post-fs
+    insmod /lib/modules/hid_touch_metrics.ko
+    insmod /lib/modules/stylus_battery_algo.ko
+    insmod /lib/modules/i2c-hid.ko
+    insmod /lib/modules/i2c-hid-nt36523n.ko
+    insmod /lib/modules/i2c-hid-ilitek.ko
+    insmod /lib/modules/focal_hid.ko
+    chown system log /sys/fs/pstore/console-ramoops-0
+    chmod 0440 /sys/fs/pstore/console-ramoops-0
+    chown system log /sys/fs/pstore/pmsg-ramoops-0
+    chmod 0440 /sys/fs/pstore/pmsg-ramoops-0
+
+on boot
+    start health-hal-2-0
+    write /sys/block/mmcblk0boot0/force_ro 1
+
+on property:twrp.preloader=rw
+    write /sys/block/mmcblk0boot0/force_ro 0
+
+on property:twrp.preloader=ro
+    write /sys/block/mmcblk0boot0/force_ro 1
+
+service fix-symlinks /system/bin/sh /system/bin/fix-symlinks.sh
+    seclabel u:r:recovery:s0
+    disabled
+    oneshot

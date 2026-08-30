@@ -1,0 +1,30 @@
+#!/system/bin/sh
+
+PATH=/system/bin:/system/xbin
+
+# Amazon reflashes the stock recovery from /vendor on every Android boot
+RC=/vendor/etc/init/vendor_flash_recovery.rc
+IMG=/vendor/etc/recovery.img
+
+if [ ! -e /dev/block/mapper/vendor ]; then
+    echo "vendor is not mapped"
+    exit 1
+fi
+
+umount /vendor 2>/dev/null
+
+lptools unmap vendor || exit 1
+lptools map vendor || exit 1
+
+mount -o rw /dev/block/mapper/vendor /vendor || exit 1
+
+for target in ${RC} ${IMG}; do
+    if [ -e ${target} ]; then
+        mv ${target} ${target}.bak && echo "renamed ${target} -> ${target}.bak"
+    else
+        echo "${target} not present"
+    fi
+done
+
+sync
+umount /vendor
